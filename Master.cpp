@@ -30,6 +30,8 @@ TODO:
 
 /* unsafe warning wird ausgeblendet */
 #define _CRT_SECURE_NO_WARNINGS 
+#define HEIGHT 100
+#define WIDTH 67
 
 #include <stdio.h>
 //#include <iostream>
@@ -83,6 +85,16 @@ int main()
 	fpNew = fopen(filePathNew, "r");
 	fpDif = fopen(filePathDif, "w");
 
+
+	//fseek(fpNew, 0, SEEK_END); // seek to end of file
+	//long fileSizeNew = ftell(fpNew); // get current file pointer
+	//fseek(fpNew, 0, SEEK_SET); // seek back to beginning of file
+	//					   // proceed with allocating memory and reading the file
+	//fseek(fpOld, 0, SEEK_END); // seek to end of file
+	//long fileSizeOld = ftell(fpOld); // get current file pointer
+	//fseek(fpOld, 0, SEEK_SET); // seek back to beginning of file
+	//						   // proceed with allocating memory and reading the file
+
 	// Get the size of the file in bytes
 	long fileSizeOld = getFileSize(fpOld);
 	long fileSizeNew = getFileSize(fpNew) + 1000;
@@ -96,17 +108,17 @@ int main()
 	// Lets take a look in hexadecimal
 	printf("BILDER 1\n");
 	printf(" "); // Damit die Formatierung von Bild 1 und 2 gleich aussieht (NUR FÜR KONSOLE)
-	
+
 	// Read the file in to the buffer
 	fread(fileBufOld, fileSizeOld, 1, fpOld);
 	//printImg(fileSizeOld, fileBufOld, width);
-	
+
 
 	printf("\n\nBILDER 2\n ");
 	// Read the file in to the buffer
 	fread(fileBufNew, fileSizeNew, 1, fpNew);
 	//printImg(fileSizeNew, fileBufNew, width);
-	
+
 
 	printf("\n\nBILDER VERGLEICH\n ");
 	// TODO: Unterschiedliche Länge hat sich (glaub ich) gelöst. Muss noch checken.
@@ -116,28 +128,37 @@ int main()
 		lengh = fileSizeOld;
 	else lengh = fileSizeNew;
 
-	 /*
-	 for (int i = 0; i < lengh; i++) {
-		if (fileBufNew[i] == fileBufOld[i]) {
-			printf("   "); // 3 leere Zeichen um Formatierung zu halten
-			// fileBufNew[i] = fileBufOld[i] - fileBufNew[i];
-		}
-		else {
-			int j = fileBufOld[i] - fileBufNew[i]; // TODO: Voneinander Abziehen um den Hexa-Wert als unterschied zu bekommen
-												   // Nicht unbedingt sinnhaft. 
-			printf("%X ", j);
-			dif++;
-		}
-		if (i % width == 0 && i != 0)
-			printf("\n ");
-	} 
-	*/
+	/*
+	for (int i = 0; i < lengh; i++) {
+	   if (fileBufNew[i] == fileBufOld[i]) {
+		   printf("   "); // 3 leere Zeichen um Formatierung zu halten
+		   // fileBufNew[i] = fileBufOld[i] - fileBufNew[i];
+	   }
+	   else {
+		   int j = fileBufOld[i] - fileBufNew[i]; // TODO: Voneinander Abziehen um den Hexa-Wert als unterschied zu bekommen
+												  // Nicht unbedingt sinnhaft.
+		   printf("%X ", j);
+		   dif++;
+	   }
+	   if (i % width == 0 && i != 0)
+		   printf("\n ");
+   }
+   */
 
 	dif = dif * 100 / (lengh - metadata(fileSizeNew, fileBufNew));
 	printf("\nProzentuelle Abweichung: %.2f %%", dif);
-	
-	fwrite(fileBufNew, fileSizeNew, 1, fpDif);
-	//getKoordinates(fileSizeNew, fileBufNew);
+
+	for (int o = 0; o < fileSizeNew; o++){
+		//if (fileBufNew[o] == EOF)
+		//	break;
+		if (o == 52)
+			o = 53;
+		char c = fileBufNew[o];
+		fprintf(fpDif, "%c", c);
+	}
+	// fwrite(fileBufNew, fileSizeNew, 1, fpDif);
+	// getKoordinates(fileSizeNew, fileBufNew);
+
 	//while (1) {
 		// damit sich konsole nicht schließt
 	//}
@@ -171,7 +192,7 @@ void printImg(long fileSize, BYTE *fileBuf, int width) {
 
 void getKoordinates(long fileSize, BYTE *fileBuf) {
 	int x, y;	// Koordinatensystem
-	int image[100][67][3]; // höhe, breite, pixel
+	int image[WIDTH][HEIGHT][3]; // höhe, breite, pixel
 
 	// Index der Metadaten holen, da diese nicht gemappt werden sollen
 	int i = metadata(fileSize, fileBuf);
