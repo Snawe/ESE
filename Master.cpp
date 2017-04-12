@@ -74,6 +74,12 @@ DOKU:
 		Behoben, indem ich die ganze Initialisierung aus der Methode in eine andere gehoben habe. Somit überschreibt sich nicht ständig der Inhalt was zu falschen Ergebnissen geführt hat.
 
 	30min Visual Studio mit Git verbinden^^
+
+	12.04.
+	1h Quellen suchen zu gescheiter moving standard deviation:
+	http://stackoverflow.com/questions/14635735/how-to-efficiently-calculate-a-moving-standard-deviation C#
+	http://jonisalonen.com/2014/efficient-and-accurate-rolling-standard-deviation/ Pyphon
+	+ versuchen umzusetzen
 		
 
 */
@@ -112,9 +118,12 @@ struct metadata{
 }metad;
 
 struct statistic {
-	int my;
-	int sigma;
-};
+	int N;
+	int average;
+	int variance;
+	int stddev;
+	int old;
+}statistic;
 
 int main()
 {
@@ -122,6 +131,28 @@ int main()
 	double dif = 0;
 	int width = 30;
 
+	const char *filePath[10] = {
+		"Grayscale_Static\\131351633974511983.pnm" ,
+		"Grayscale_Static\\131351633985001584.pnm" ,
+		"Grayscale_Static\\131351633995532702.pnm" ,
+		"Grayscale_Static\\131351634006337327.pnm" ,
+		"Grayscale_Static\\131351634016712236.pnm" ,
+		"Grayscale_Static\\131351634026567246.pnm" ,
+		"Grayscale_Static\\131351634036888307.pnm" ,
+		"Grayscale_Static\\131351634047768552.pnm" ,
+		"Grayscale_Static\\131351634062397230.pnm" ,
+		"Grayscale_Static\\131351634074522928.pnm" };
+	const char *filePathChange[10] = {
+		"Grayscale_Static\\_131351633974511983.pnm" ,
+		"Grayscale_Static\\_131351633985001584.pnm" ,
+		"Grayscale_Static\\_131351633995532702.pnm" ,
+		"Grayscale_Static\\_131351634006337327.pnm" ,
+		"Grayscale_Static\\_131351634016712236.pnm" ,
+		"Grayscale_Static\\_131351634026567246.pnm" ,
+		"Grayscale_Static\\_131351634036888307.pnm" ,
+		"Grayscale_Static\\_131351634047768552.pnm" ,
+		"Grayscale_Static\\_131351634062397230.pnm" ,
+		"Grayscale_Static\\_131351634074522928.pnm" };
 	// 2 Bilder einlesen und speichern in neuen
 	const char *filePathOld = "Grayscale_Static\\131351633974511983.pnm";
 	const char *filePathNew = "Grayscale_Static\\131351634006337327.pnm"; // Kopf
@@ -174,7 +205,8 @@ int main()
 	if (DEBUG_PRINT)
 		printImg(fileSizeNew, fileBufNew, width);
 	// TODO: WTF???? Ich lese nur aus, schreibe sofort wieder rein und das bild schaut anders aus........
-	fwrite(fileBufNew, fileSizeNew, 1, fpDif);
+	//
+	//fwrite(fileBufNew, fileSizeNew, 1, fpDif);
 
 	/*convert(fileBufNew);
 	convert(fileBufOld);*/
@@ -209,17 +241,36 @@ int main()
 	dif = dif * 100 / (lengh - metad);
 	printf("\nProzentuelle Abweichung (Pixel gegen Pixel): %.2f %%\n", dif);
 
-	int **sValue = (BYTE*)malloc(fileSizeNew * sizeof(int));// Rows
-	for (int i = 0; i < fileSizeNew; i++) { //Colums
-		sValue[i] = malloc(2);
-	}
+	//int **sValue = (BYTE*)malloc(fileSizeNew * sizeof(int));// Rows
+	//for (int i = 0; i < fileSizeNew; i++) { //Colums
+	//	sValue[i] = malloc(2);
+	//}
 
-	for (int i = 0; i < 10; i++) {
-		double calcdif = calcStat(fileSizeNew, fileBufOld, fileBufNew, metad, sValue);
-		calcdif = calcdif * 100 / (lengh - metad);
-		printf("Prozentuelle Abweichung (Statistisch): %.2f %%\n", calcdif);
+	//for (int i = 0; i < 10; i++) {
+	//	double calcdif = calcStat(fileSizeNew, fileBufOld, fileBufNew, metad, sValue);
+	//	calcdif = calcdif * 100 / (lengh - metad);
+	//	printf("Prozentuelle Abweichung (Statistisch): %.2f %%\n", calcdif);
+	//}
+	int window_size = 10;
+	int average = 128;
+	int variance = 128;
+	int first = 128;
+	int val = fileBufNew;
+	for (int j = 0; j < 10; j++) {
+		fpNew = fopen(filePath[j], "r");
+		fpDif = fopen(filePathChange[j], "w");
+		fread(fileBufNew, fileSizeNew, 1, fpNew);
+		for (int i = metad; i < fileSizeNew; i++) {
+			if (fileBufNew[i] > (statistic.average + statistic.stddev * 3))
+				fileBufNew[i] = 0xff;
+			else if (fileBufNew[i] < (statistic.average + statistic.stddev * 3))
+				fileBufNew[i] = 0x00;
+			rollingStatistic(window_size, average, variance, first, val);
+		}
+		fwrite(fileBufNew, fileSizeNew, 1, fpDif);
+		fclose(fpDif);
+		fclose(fpNew);
 	}
-
 	//for (int o = metad; o < fileSizeNew; o++){
 	//	//if (fileBufNew[o] == EOF)
 	//	//	break;
@@ -244,6 +295,32 @@ int main()
 	fclose(fpNew);
 	fclose(fpDif);
 	return 0;
+}
+int rollingStatistic(int window_size, int average, int variance, int first, int val ) {
+	static int count = 0;
+	if (count == 0) {
+		statistic.N = window_size;
+		statistic.average = average;
+		statistic.variance = variance;
+		statistic.stddev = sqrt(variance);
+		statistic.old = first;
+	}
+
+	int oldavg = statistic.average;
+	int newavg = oldavg + (val - statistic.old) / statistic.N;
+	// print(str(oldavg) + " " + str(newavg))
+	/*printf("oldavg = %i\n", oldavg);
+	printf("newavg = %i\n", newavg);*/
+	statistic.average = newavg;
+	int newvar = (val - statistic.old)*(val - newavg + statistic.old - oldavg) / (statistic.N - 1);
+	if ((statistic.variance + newvar) < 0)
+		newvar = statistic.variance;
+	statistic.variance = newvar;
+	//print("V:" + str(self.variance))
+	/*printf("variance = %i\n", statistic.variance);*/
+	statistic.stddev = sqrt(statistic.variance);
+	statistic.old = val;
+
 }
 
 int calcStat(long fileSize, BYTE *fileBufOld, BYTE *fileBufNew, int offset, int **sValue) {
