@@ -73,6 +73,7 @@ DOKU:
 	2h Bug behebung, dass nach dem ersten Bild danach immer 0% steht, bzw. nach der "Lösung" eine pointer exception aufgetreten ist.
 		Behoben, indem ich die ganze Initialisierung aus der Methode in eine andere gehoben habe. Somit überschreibt sich nicht ständig der Inhalt was zu falschen Ergebnissen geführt hat.
 
+	30min Visual Studio mit Git verbinden^^
 		
 
 */
@@ -103,7 +104,6 @@ void printImg(long fileSize, BYTE *fileBuf, int width);
 void convert(BYTE *frmBuffer);
 void getKoordinates(long fileSize, BYTE *fileBuf);
 int calcStat(long fileSize, BYTE *fileBufOld, BYTE *fileBufNew, int offset);
-
 
 struct metadata{
 	int width;
