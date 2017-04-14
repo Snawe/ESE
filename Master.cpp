@@ -119,13 +119,21 @@ struct metadata{
 	int color;
 }metad;
 
+//struct statistic {
+//	int N;
+//	int average;
+//	int variance;
+//	int stddev;
+//	int old;
+//}statistic;
+
 struct statistic {
 	int N;
 	int average;
 	int variance;
 	int stddev;
 	int old;
-}statistic;
+};
 
 int main()
 {
@@ -253,23 +261,26 @@ int main()
 	//	calcdif = calcdif * 100 / (lengh - metad);
 	//	printf("Prozentuelle Abweichung (Statistisch): %.2f %%\n", calcdif);
 	//}
-	statistic.N = 10;
+	/*statistic.N = 10;
 	statistic.average = 128;
 	statistic.variance = 128;
 	statistic.stddev = sqrt(statistic.variance);
 	int first = 128;
 	statistic.old = first;	
-	int val = fileBufNew;
+	int val = fileBufNew;*/
+	int first = 128;
+	struct statistic *statistic = (BYTE*)malloc(fileSizeNew);
+	
 
 	for (int j = 0; j < 10; j++) {
 		fpNew = fopen(filePath[j], "r");
 		fpDif = fopen(filePathChange[j], "w");
 		fread(fileBufNew, fileSizeNew, 1, fpNew);
 		for (int i = metad; i < fileSizeNew; i++) {
-			rollingStatistic(statistic.N, statistic.average, statistic.variance, first, statistic.old);
-			if (fileBufNew[i] > (statistic.average + statistic.stddev * 3))
+			rollingStatistic(i, fileBufNew[i]);
+			if (fileBufNew[i] > (statistic[i].average + statistic[i].stddev * 3))
 				fileBufNew[i] = 0xff;
-			else if (fileBufNew[i] < (statistic.average + statistic.stddev * 3))
+			else if (fileBufNew[i] < (statistic[i].average + statistic[i].stddev * 3))
 				fileBufNew[i] = 0xFF;	
 		}
 		fwrite(fileBufNew, fileSizeNew, 1, fpDif);
@@ -301,31 +312,32 @@ int main()
 	fclose(fpDif);
 	return 0;
 }
-int rollingStatistic(int window_size, int average, int variance, int first, int val ) {
+int rollingStatistic(int i, int val) {
 	static int count = 0;
+	struct statistic *statistic;
 	if (count == 0) {
-		statistic.N = window_size;
-		statistic.average = average;
-		statistic.variance = variance;
-		statistic.stddev = sqrt(variance);
-		statistic.old = first;
+		statistic[i].N = 10;
+		statistic[i].average = 128;
+		statistic[i].variance = 128;
+		statistic[i].stddev = sqrt(statistic[i].variance);
+		statistic[i].old = 128;
 		count++;
 	}
 
-	int oldavg = statistic.average;
-	int newavg = oldavg + (val - statistic.old) / statistic.N;
+	int oldavg = statistic[i].average;
+	int newavg = oldavg + (val - statistic[i].old) / statistic[i].N;
 	// print(str(oldavg) + " " + str(newavg))
 	/*printf("oldavg = %i\n", oldavg);
 	printf("newavg = %i\n", newavg);*/
-	statistic.average = newavg;
-	int newvar = (val - statistic.old)*(val - newavg + statistic.old - oldavg) / (statistic.N - 1);
-	if ((statistic.variance + newvar) < 0)
-		newvar = statistic.variance;
-	statistic.variance = newvar;
+	statistic[i].average = newavg;
+	int newvar = (val - statistic[i].old)*(val - newavg + statistic[i].old - oldavg) / (statistic[i].N - 1);
+	if ((statistic[i].variance + newvar) < 0)
+		newvar = statistic[i].variance;
+	statistic[i].variance = newvar;
 	//print("V:" + str(self.variance))
 	/*printf("variance = %i\n", statistic.variance);*/
-	statistic.stddev = sqrt(statistic.variance);
-	statistic.old = val;
+	statistic[i].stddev = sqrt(statistic[i].variance);
+	statistic[i].old = val;
 
 	//count++;
 }
