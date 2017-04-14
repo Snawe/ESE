@@ -76,6 +76,7 @@ DOKU:
 	30min Visual Studio mit Git verbinden^^
 
 	12.04.
+	~45min Recheche ob es eine bessere Methode als nur µ anpassen gibt.
 	1h Quellen suchen zu gescheiter moving standard deviation:
 	http://stackoverflow.com/questions/14635735/how-to-efficiently-calculate-a-moving-standard-deviation C#
 	http://jonisalonen.com/2014/efficient-and-accurate-rolling-standard-deviation/ Pyphon
@@ -94,7 +95,7 @@ TODO:
 #define HEIGHT 144
 #define WIDTH 176
 #define DEBUG_PRINT 0
-#define DEBUG_WAIT 1
+#define DEBUG_WAIT 0
 #define PPM 0
 #define PNM 1
 
@@ -103,6 +104,7 @@ TODO:
 //#include<conio.h>
 #include<stdlib.h>
 #include <stdint.h>
+#include <math.h>
 
 // An unsigned char can store 1 Bytes (8bits) of data (0-255)
 typedef unsigned char BYTE;
@@ -251,21 +253,24 @@ int main()
 	//	calcdif = calcdif * 100 / (lengh - metad);
 	//	printf("Prozentuelle Abweichung (Statistisch): %.2f %%\n", calcdif);
 	//}
-	int window_size = 10;
-	int average = 128;
-	int variance = 128;
+	statistic.N = 10;
+	statistic.average = 128;
+	statistic.variance = 128;
+	statistic.stddev = sqrt(statistic.variance);
 	int first = 128;
+	statistic.old = first;	
 	int val = fileBufNew;
+
 	for (int j = 0; j < 10; j++) {
 		fpNew = fopen(filePath[j], "r");
 		fpDif = fopen(filePathChange[j], "w");
 		fread(fileBufNew, fileSizeNew, 1, fpNew);
 		for (int i = metad; i < fileSizeNew; i++) {
+			rollingStatistic(statistic.N, statistic.average, statistic.variance, first, statistic.old);
 			if (fileBufNew[i] > (statistic.average + statistic.stddev * 3))
 				fileBufNew[i] = 0xff;
 			else if (fileBufNew[i] < (statistic.average + statistic.stddev * 3))
-				fileBufNew[i] = 0x00;
-			rollingStatistic(window_size, average, variance, first, val);
+				fileBufNew[i] = 0xFF;	
 		}
 		fwrite(fileBufNew, fileSizeNew, 1, fpDif);
 		fclose(fpDif);
@@ -304,6 +309,7 @@ int rollingStatistic(int window_size, int average, int variance, int first, int 
 		statistic.variance = variance;
 		statistic.stddev = sqrt(variance);
 		statistic.old = first;
+		count++;
 	}
 
 	int oldavg = statistic.average;
@@ -321,6 +327,7 @@ int rollingStatistic(int window_size, int average, int variance, int first, int 
 	statistic.stddev = sqrt(statistic.variance);
 	statistic.old = val;
 
+	//count++;
 }
 
 int calcStat(long fileSize, BYTE *fileBufOld, BYTE *fileBufNew, int offset, int **sValue) {
