@@ -127,13 +127,13 @@ struct metadata{
 //	int old;
 //}statistic;
 
-struct statistic {
+typedef struct statistic {
 	int N;
 	int average;
 	int variance;
 	int stddev;
 	int old;
-};
+} statistic;
 
 int main()
 {
@@ -271,17 +271,16 @@ int main()
 	int first = 128;
 	struct statistic *statistic = (BYTE*)malloc(fileSizeNew);
 	
-
 	for (int j = 0; j < 10; j++) {
 		fpNew = fopen(filePath[j], "r");
 		fpDif = fopen(filePathChange[j], "w");
 		fread(fileBufNew, fileSizeNew, 1, fpNew);
 		for (int i = metad; i < fileSizeNew; i++) {
-			rollingStatistic(i, fileBufNew[i]);
+			rollingStatistic(j, i, fileBufNew[i], statistic);
 			if (fileBufNew[i] > (statistic[i].average + statistic[i].stddev * 3))
 				fileBufNew[i] = 0xff;
 			else if (fileBufNew[i] < (statistic[i].average + statistic[i].stddev * 3))
-				fileBufNew[i] = 0xFF;	
+				fileBufNew[i] = 0x00;	
 		}
 		fwrite(fileBufNew, fileSizeNew, 1, fpDif);
 		fclose(fpDif);
@@ -312,16 +311,16 @@ int main()
 	fclose(fpDif);
 	return 0;
 }
-int rollingStatistic(int i, int val) {
-	static int count = 0;
-	struct statistic *statistic;
-	if (count == 0) {
+int rollingStatistic(int j, int i, int val, statistic *statistic) {
+	// static int count = 0;
+	// struct statistic *statistic = (BYTE*)malloc(fileSizeNew);
+	if (j == 0) { // init 
 		statistic[i].N = 10;
 		statistic[i].average = 128;
 		statistic[i].variance = 128;
 		statistic[i].stddev = sqrt(statistic[i].variance);
 		statistic[i].old = 128;
-		count++;
+		// count++;
 	}
 
 	int oldavg = statistic[i].average;
