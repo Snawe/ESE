@@ -95,7 +95,7 @@ TODO:
 #define HEIGHT 144
 #define WIDTH 176
 #define DEBUG_PRINT 0
-#define DEBUG_WAIT 0
+#define DEBUG_WAIT 1
 #define PPM 0
 #define PNM 1
 
@@ -141,7 +141,7 @@ int main()
 	double dif = 0;
 	int width = 30;
 
-	const char *filePath[10] = {
+	const char *filePath[13] = {
 		"Grayscale_Static\\131351633974511983.pnm" ,
 		"Grayscale_Static\\131351633985001584.pnm" ,
 		"Grayscale_Static\\131351633995532702.pnm" ,
@@ -151,8 +151,11 @@ int main()
 		"Grayscale_Static\\131351634036888307.pnm" ,
 		"Grayscale_Static\\131351634047768552.pnm" ,
 		"Grayscale_Static\\131351634062397230.pnm" ,
-		"Grayscale_Static\\131351634074522928.pnm" };
-	const char *filePathChange[10] = {
+		"Grayscale_Static\\131351634074522928.pnm" ,
+		"Grayscale_Static\\131351634148364524.pnm" ,
+		"Grayscale_Static\\131351634047768552.pnm" ,
+		"Grayscale_Static\\131351634062397230.pnm" };
+	const char *filePathChange[13] = {
 		"Grayscale_Static\\_131351633974511983.pnm" ,
 		"Grayscale_Static\\_131351633985001584.pnm" ,
 		"Grayscale_Static\\_131351633995532702.pnm" ,
@@ -162,7 +165,10 @@ int main()
 		"Grayscale_Static\\_131351634036888307.pnm" ,
 		"Grayscale_Static\\_131351634047768552.pnm" ,
 		"Grayscale_Static\\_131351634062397230.pnm" ,
-		"Grayscale_Static\\_131351634074522928.pnm" };
+		"Grayscale_Static\\_131351634074522928.pnm" ,
+		"Grayscale_Static\\__131351634047768552.pnm" ,
+		"Grayscale_Static\\__131351634062397230.pnm" ,
+		"Grayscale_Static\\__131351634074522928.pnm" };
 	// 2 Bilder einlesen und speichern in neuen
 	const char *filePathOld = "Grayscale_Static\\131351633974511983.pnm";
 	const char *filePathNew = "Grayscale_Static\\131351634006337327.pnm"; // Kopf
@@ -255,7 +261,7 @@ int main()
 	//for (int i = 0; i < fileSizeNew; i++) { //Colums
 	//	sValue[i] = malloc(2);
 	//}
-
+	
 	//for (int i = 0; i < 10; i++) {
 	//	double calcdif = calcStat(fileSizeNew, fileBufOld, fileBufNew, metad, sValue);
 	//	calcdif = calcdif * 100 / (lengh - metad);
@@ -270,19 +276,31 @@ int main()
 	int val = fileBufNew;*/
 	int first = 128;
 	struct statistic statistic[50703];
+	double calcdif = 0;
 	
-	for (int j = 0; j < 10; j++) {
+	for (int j = 0; j < 13; j++) {
+		calcdif = 0;
 		fpNew = fopen(filePath[j], "r");
 		fpDif = fopen(filePathChange[j], "w");
 		fread(fileBufNew, fileSizeNew, 1, fpNew);
 		for (int i = metad; i < fileSizeNew; i++) {
 			rollingStatistic(j, i, fileBufNew[i], statistic);
-			if (fileBufNew[i] > (statistic[i].average + statistic[i].stddev * 3))
+			/*if (fileBufNew[i] > (statistic[i].average + statistic[i].stddev * 3))
 				fileBufNew[i] = 0xff;
 			else if (fileBufNew[i] < (statistic[i].average + statistic[i].stddev * 3))
-				fileBufNew[i] = 0x00;	
+				fileBufNew[i] = 0x00;
+			else 
+				fileBufNew[i] = 0xFF0000;*/
+			if (fileBufNew[i] > (statistic[i].average + statistic[i].stddev * 3) || fileBufNew[i] < (statistic[i].average + statistic[i].stddev * 3))
+				fileBufNew[i] = 0xFF;
+			else {
+				fileBufNew[i] = 0x00;
+				calcdif++;
+			}
 		}
 		fwrite(fileBufNew, fileSizeNew, 1, fpDif);
+		calcdif = calcdif * 100 / (lengh - metad);
+		printf("Prozentuelle Abweichung (Statistisch): %.2f %%\n", calcdif);
 		fclose(fpDif);
 		fclose(fpNew);
 	}
@@ -329,16 +347,26 @@ int rollingStatistic(int j, int i, int val, statistic *statistic) {
 	/*printf("oldavg = %i\n", oldavg);
 	printf("newavg = %i\n", newavg);*/
 	statistic[i].average = newavg;
+	//( NEU - ATL ) * ( NEU - AVG + ALT - AltAVT
+	//int newvar = (abs(val - statistic[i].old))*(abs(val - newavg + statistic[i].old - oldavg)) / (statistic[i].N - 1);
 	int newvar = (val - statistic[i].old)*(val - newavg + statistic[i].old - oldavg) / (statistic[i].N - 1);
-	if ((statistic[i].variance + newvar) < 0)
-		newvar = statistic[i].variance;
+	
+	/*if ((statistic[i].variance + newvar) < 0)
+		newvar = statistic[i].variance;*/
 	statistic[i].variance = newvar;
 	//print("V:" + str(self.variance))
 	/*printf("variance = %i\n", statistic.variance);*/
 	statistic[i].stddev = sqrt(statistic[i].variance);
 	statistic[i].old = val;
 
-	return statistic;
+	//int oldavg = statistic[i].average;
+	//int newavg = oldavg + (val - statistic[i].old) / statistic[i].N;
+	//statistic[i].average = newavg;
+	//statistic[i].variance += (val - statistic[i].old)*(val - newavg + statistic[i].old - oldavg) / (statistic[i].N - 1);
+	//statistic[i].stddev = sqrt(statistic[i].variance);
+	//statistic[i].old = val;
+
+	//return statistic;
 	//count++;
 }
 
