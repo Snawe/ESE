@@ -269,7 +269,7 @@ int main()
 	statistic.old = first;	
 	int val = fileBufNew;*/
 	int first = 128;
-	struct statistic *statistic = (BYTE*)malloc(fileSizeNew);
+	struct statistic statistic[50703];
 	
 	for (int j = 0; j < 10; j++) {
 		fpNew = fopen(filePath[j], "r");
@@ -338,6 +338,7 @@ int rollingStatistic(int j, int i, int val, statistic *statistic) {
 	statistic[i].stddev = sqrt(statistic[i].variance);
 	statistic[i].old = val;
 
+	return statistic;
 	//count++;
 }
 
