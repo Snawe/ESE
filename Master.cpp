@@ -95,7 +95,7 @@ TODO:
 #define HEIGHT 144
 #define WIDTH 176
 #define DEBUG_PRINT 0
-#define DEBUG_WAIT 1
+#define DEBUG_WAIT 0
 #define PPM 0
 #define PNM 1
 
@@ -141,34 +141,38 @@ int main()
 	double dif = 0;
 	int width = 30;
 
-	const char *filePath[13] = {
-		"Grayscale_Static\\131351633974511983.pnm" ,
-		"Grayscale_Static\\131351633985001584.pnm" ,
-		"Grayscale_Static\\131351633995532702.pnm" ,
-		"Grayscale_Static\\131351634006337327.pnm" ,
-		"Grayscale_Static\\131351634016712236.pnm" ,
-		"Grayscale_Static\\131351634026567246.pnm" ,
-		"Grayscale_Static\\131351634036888307.pnm" ,
-		"Grayscale_Static\\131351634047768552.pnm" ,
-		"Grayscale_Static\\131351634062397230.pnm" ,
-		"Grayscale_Static\\131351634074522928.pnm" ,
-		"Grayscale_Static\\131351634148364524.pnm" ,
-		"Grayscale_Static\\131351634047768552.pnm" ,
-		"Grayscale_Static\\131351634062397230.pnm" };
-	const char *filePathChange[13] = {
-		"Grayscale_Static\\_131351633974511983.pnm" ,
-		"Grayscale_Static\\_131351633985001584.pnm" ,
-		"Grayscale_Static\\_131351633995532702.pnm" ,
-		"Grayscale_Static\\_131351634006337327.pnm" ,
-		"Grayscale_Static\\_131351634016712236.pnm" ,
-		"Grayscale_Static\\_131351634026567246.pnm" ,
-		"Grayscale_Static\\_131351634036888307.pnm" ,
-		"Grayscale_Static\\_131351634047768552.pnm" ,
-		"Grayscale_Static\\_131351634062397230.pnm" ,
-		"Grayscale_Static\\_131351634074522928.pnm" ,
-		"Grayscale_Static\\__131351634047768552.pnm" ,
-		"Grayscale_Static\\__131351634062397230.pnm" ,
-		"Grayscale_Static\\__131351634074522928.pnm" };
+	const char *filePath[15] = {
+		"testM\\1.pnm" ,
+		"testM\\2.pnm" ,
+		"testM\\3.pnm" ,
+		"testM\\4.pnm" ,
+		"testM\\5.pnm" ,
+		"testM\\6.pnm" ,
+		"testM\\7.pnm" ,
+		"testM\\8.pnm" ,
+		"testM\\9.pnm" ,
+		"testM\\10.pnm" ,
+		"testM\\11.pnm" ,
+		"testM\\12.pnm" ,
+		"testM\\13.pnm",
+		"testM\\14.pnm", 
+		"testM\\15.pnm" };
+	const char *filePathChange[15] = {
+		"testM\\_131351633974511983.pnm" ,
+		"testM\\_131351633985001584.pnm" ,
+		"testM\\_131351633995532702.pnm" ,
+		"testM\\_131351634006337327.pnm" ,
+		"testM\\_131351634016712236.pnm" ,
+		"testM\\_131351634026567246.pnm" ,
+		"testM\\_131351634036888307.pnm" ,
+		"testM\\_131351634047768552.pnm" ,
+		"testM\\_131351634062397230.pnm" ,
+		"testM\\_131351634074522928.pnm" ,
+		"testM\\__131351634047768552.pnm" ,
+		"testM\\__131351634062397230.pnm" ,
+		"testM\\__131351634074522928.pnm",
+		"testM\\14.pnm", 
+		"testM\\15.pnm" };
 	// 2 Bilder einlesen und speichern in neuen
 	const char *filePathOld = "Grayscale_Static\\131351633974511983.pnm";
 	const char *filePathNew = "Grayscale_Static\\131351634006337327.pnm"; // Kopf
@@ -282,23 +286,30 @@ int main()
 		calcdif = 0;
 		fpNew = fopen(filePath[j], "r");
 		fpDif = fopen(filePathChange[j], "w");
-		fread(fileBufNew, fileSizeNew, 1, fpNew);
-		for (int i = metad; i < fileSizeNew; i++) {
-			rollingStatistic(j, i, fileBufNew[i], statistic);
-			/*if (fileBufNew[i] > (statistic[i].average + statistic[i].stddev * 3))
-				fileBufNew[i] = 0xff;
-			else if (fileBufNew[i] < (statistic[i].average + statistic[i].stddev * 3))
-				fileBufNew[i] = 0x00;
-			else 
-				fileBufNew[i] = 0xFF0000;*/
-			if (fileBufNew[i] > (statistic[i].average + statistic[i].stddev * 3) || fileBufNew[i] < (statistic[i].average + statistic[i].stddev * 3))
-				fileBufNew[i] = 0xFF;
-			else {
-				fileBufNew[i] = 0x00;
-				calcdif++;
-			}
+		for (int i = 0; i < metad; i++) {
+			fread(fileBufNew, 1, 1, fpNew);
+			fwrite(fileBufNew, 1, 1, fpDif);
 		}
-		fwrite(fileBufNew, fileSizeNew, 1, fpDif);
+		for (int i = metad; i < fileSizeNew; i++) {
+			fread(fileBufNew, 1, 1, fpNew);
+			rollingStatistic(j, i, fileBufNew[0], statistic);
+			/*if (fileBufNew[0] > (statistic[i].average + statistic[i].stddev * 3))
+				fileBufNew[0] = 0x00;
+			else if (fileBufNew[0] < (statistic[i].average + statistic[i].stddev * 3))
+				fileBufNew[0] = 0x00;*/
+			fileBufNew[0] = statistic[i].average;
+			int c = fwrite(fileBufNew, 1, 1, fpDif);
+			if(c != 1)
+				printf("%d", c);
+			//else 
+			//	fileBufNew[i] = 0xFF0000;
+			//if ((fileBufNew[i] > (statistic[i].average + statistic[i].stddev * 3)) || (fileBufNew[i] < (statistic[i].average + statistic[i].stddev * 3)))
+			//	fileBufNew[i] = 0xFF;
+			//else {
+			//	fileBufNew[i] = 0x00;
+			//	calcdif++;
+			//}
+		}		
 		calcdif = calcdif * 100 / (lengh - metad);
 		printf("Prozentuelle Abweichung (Statistisch): %.2f %%\n", calcdif);
 		fclose(fpDif);
@@ -343,16 +354,12 @@ int rollingStatistic(int j, int i, int val, statistic *statistic) {
 
 	int oldavg = statistic[i].average;
 	int newavg = oldavg + (val - statistic[i].old) / statistic[i].N;
-	// print(str(oldavg) + " " + str(newavg))
-	/*printf("oldavg = %i\n", oldavg);
-	printf("newavg = %i\n", newavg);*/
 	statistic[i].average = newavg;
 	//( NEU - ATL ) * ( NEU - AVG + ALT - AltAVT
 	//int newvar = (abs(val - statistic[i].old))*(abs(val - newavg + statistic[i].old - oldavg)) / (statistic[i].N - 1);
 	int newvar = (val - statistic[i].old)*(val - newavg + statistic[i].old - oldavg) / (statistic[i].N - 1);
-	
-	/*if ((statistic[i].variance + newvar) < 0)
-		newvar = statistic[i].variance;*/
+	if ((statistic[i].variance + newvar) < 0)
+		newvar = statistic[i].variance;
 	statistic[i].variance = newvar;
 	//print("V:" + str(self.variance))
 	/*printf("variance = %i\n", statistic.variance);*/
