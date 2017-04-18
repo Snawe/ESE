@@ -8,6 +8,9 @@
 *.sln.docstates
 *.VC.opendb
 *.VC.db
+/Grayscale_Static/
+/bilder/
+testM/*
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
