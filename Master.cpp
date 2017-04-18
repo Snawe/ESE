@@ -81,7 +81,11 @@ DOKU:
 	http://stackoverflow.com/questions/14635735/how-to-efficiently-calculate-a-moving-standard-deviation C#
 	http://jonisalonen.com/2014/efficient-and-accurate-rolling-standard-deviation/ Pyphon
 	+ versuchen umzusetzen
-		
+
+	17.04.
+	2h Umsetzen der statistischen Verfahren + Fehler testen + herausfinden wie genau das Verfahren funktioniert und warum die Bilder nicht richtig ausschauen
+	1h cleanup code nachdem die ausgabe Bilder eindeutig falsch sind und man dadurch vllt auf fehler drauf kommt
+	2h Warnings fixen + Error's fixen die durch das aufräumen zu Tageslicht gekommen sind 
 
 */
 /*
