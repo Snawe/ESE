@@ -84,8 +84,29 @@ DOKU:
 
 	17.04.
 	2h Umsetzen der statistischen Verfahren + Fehler testen + herausfinden wie genau das Verfahren funktioniert und warum die Bilder nicht richtig ausschauen
+		Umgestiegen auf Berechnung von Paper: http://people.ds.cam.ac.uk/fanf2/hermes/doc/antiforgery/stats.pdf
 	1h cleanup code nachdem die ausgabe Bilder eindeutig falsch sind und man dadurch vllt auf fehler drauf kommt
-	2h Warnings fixen + Error's fixen die durch das aufräumen zu Tageslicht gekommen sind 
+	2h Warnings fixen + Error's fixen die durch das aufräumen zu Tageslicht gekommen sind
+		Komplette Überarbeitung der Metadata 
+		Fehler draufgekommen: Metadata werden nur einmal berechnet. Metadata können sich aber im laufe des Programms ändern.
+	2h * 4 (Mensa) Test duchführen mit gleichbleibenden und fehlbleibenden bildern.
+		Wir haben ein Fehlverfahlten des Codes festgestellt.
+		Code angepasst und Bewegungsbilder anzahl verändernt
+		Sind auf den Gedanken gekommen, dass vielleicht der Algo falsch ist
+		TODO: Weitere Algorithmen suchen.
+
+	06.05.
+		30 min Es gibt das Problem, dass wir 11 mal das selbe bild nehmen, und mitten drin auf einmal "Bewegung" erkannt wird.
+			Zum fixen einmal step für step debug gemacht und drauf gekommen, dass zuerst gesetzt wird ob bewegung da ist und dann der neue wert berechnet wird...
+			Problem dabei: Überschreiben den Pixel. Dadurch übergeben wir der berechnung den überschriebenen wert (Weiß oder Schwarz), aber nicht den tatsächlichen Bilderwert.
+			Quick fix: Berechnung vor das schreiben gegeben
+		2h Nächstes Problem: Berechnung des Durchschnitts funktioniert nicht
+			double newavg = (oldavg - oldavg / stat->N) + (val / stat->N);
+			das sollte eigentlich den alten average nehmen, davon einen anteil abziehen und vom neuen Wert einen Anteil zugeben.
+			Lustigerweise sinkt aber der Durchschnitt, wenn der neue Wert größer ist. was er nicht tun sollte...
+			Lösung: int val auf double geändert........ -.-
+
+
 
 */
 /*
@@ -113,10 +134,10 @@ TODO:
 // An unsigned char can store 1 Bytes (8bits) of data (0-255)
 typedef struct stats {
 	int N;
-	int average;
-	int variance;
+	double average;
+	double variance;
 	double stddev;
-	int old;
+	double old;
 } statistic;
 
 struct metadata {
@@ -128,25 +149,25 @@ struct metadata {
 typedef unsigned char BYTE; 
 long getFileSize(FILE *file);
 int metadata(FILE *fp);
-int rollingStatistic(int val, statistic *stat);
+int rollingStatistic(double val, statistic *stat);
 
 const char *filePath[20] = {
 	"testM\\1.pnm" ,
+	"testM\\111.pnm" ,
 	"testM\\1.pnm" ,
 	"testM\\1.pnm" ,
 	"testM\\1.pnm" ,
+	"testM\\1_grau.pnm" ,
 	"testM\\1.pnm" ,
-	"testM\\1.pnm" ,
-	"testM\\1.pnm" ,
-	"testM\\1.pnm" ,
+	"testM\\1_grau1.pnm" ,
 	"testM\\1.pnm" ,
 	"testM\\1.pnm" ,
 	"testM\\11.pnm",
 	"testM\\1.pnm" ,
+	"testM\\1_stift.pnm" ,
 	"testM\\1.pnm" ,
 	"testM\\1.pnm" ,
-	"testM\\1.pnm" ,
-	"testM\\1.pnm" ,
+	"testM\\111.pnm" ,
 	"testM\\1.pnm" ,
 	"testM\\1.pnm" ,
 	"testM\\1.pnm" ,
@@ -163,8 +184,13 @@ const char *filePath[20] = {
 	//"testM\\11.pnm" ,
 	//"testM\\12.pnm" ,
 	//"testM\\13.pnm",
-	//"testM\\14.pnm",
-	//"testM\\15.pnm" };
+	//"testM\\1.pnm",
+	//"testM\\2.pnm",
+	//"testM\\3.pnm" ,
+	//"testM\\4.pnm" ,
+	//"testM\\5.pnm" ,
+	//"testM\\6.pnm" ,
+	//"testM\\7.pnm"};
 
 const char *filePathChange[20] = {
 	"testM\\_01.pnm" ,
@@ -196,6 +222,13 @@ int main()
 	FILE *fpNew;			// File pointer
 	FILE *fpDif;			// File pointer für Dif im Bild
 
+	/*
+	Daten von einen Pixel in Datei schreiben init
+	*/
+	int fileStat;
+	FILE *fpStat;
+	fpStat = fopen("bild.txt", "w");
+	fwrite("average, variance, stddev, old\n", 31, 1, fpStat);
 	// Open the file in binary mode using the "rb" format string
 	// This also checks if the file exists and/or can be opened for reading correctly
 		// TODO: Check habe ich derzeit rausgenommen 
@@ -212,13 +245,18 @@ int main()
 	long fileSizeNew = 0;
 	int metad = 0;
 
-	for (int i = 0; i < 64000; i++) {
-		stat[i].N = 5;
-		stat[i].average = 128;
+	fpNew = fopen(filePath[0], "rb");
+	fileSizeNew = getFileSize(fpNew);
+	metad = metadata(fpNew);
+	for (int i = 0; i < (fileSizeNew - metad); i++) {
+		fread(&fileBufNew, 1, 1, fpNew);
+		stat[i].N = 3;
+		stat[i].average = fileBufNew;
 		stat[i].variance = 200;
 		stat[i].stddev = sqrt(stat[i].variance);
 		stat[i].old = 128;
 	}
+	fclose(fpNew);
 
 	for (int j = 0; j < (sizeof(filePath)/sizeof(filePath[0])); j++) {
 		fpNew = fopen(filePath[j], "rb");
@@ -231,16 +269,53 @@ int main()
 			fwrite(&fileBufNew, 1, 1, fpDif);
 		}
 		printf("%s\n", filePath[j]);
-		for (int i = metad; i < fileSizeNew; i++) {
+		for (int i = 0; i < (fileSizeNew - metad); i++) {
 			fread(&fileBufNew, 1, 1, fpNew);
 			rollingStatistic(fileBufNew, &(stat[i]));
-			
-			if (fileBufNew > (stat[i].average + stat[i].stddev * 3))
+			// Bewegung = Weiß
+			if (fileBufNew > (stat[i].average + stat[i].stddev) + 5)
 				fileBufNew = 0xFF;
-			else if (fileBufNew < (stat[i].average - stat[i].stddev * 3))
+			else if (fileBufNew < (stat[i].average - stat[i].stddev) - 5)
 				fileBufNew = 0xFF;
+			// Keine Bewegung = Schwarz
 			else
 				fileBufNew = 0x00;
+			// Satistik Werte in .txt file schreiben
+			if (i == 101) {
+				int k = 0;
+				int arr[10];
+				fileStat = stat[i].average;
+				fwrite(&fileStat, 1, sizeof(fileStat), fpStat);
+				fileStat = ',';
+				fwrite(&fileStat, 1, sizeof(fileStat), fpStat);
+				fileStat = stat[i].variance;
+				fwrite(&fileStat, 1, sizeof(fileStat), fpStat);
+				fileStat = ',';
+				fwrite(&fileStat, 1, sizeof(fileStat), fpStat);
+				fileStat = stat[i].stddev;
+				fwrite(&fileStat, 1, sizeof(fileStat), fpStat);
+				fileStat = ',';
+				fwrite(&fileStat, 1, sizeof(fileStat), fpStat);
+				fileStat = stat[i].old;
+				fwrite(&fileStat, 1, sizeof(fileStat), fpStat);
+				fileStat = '\n';
+				fwrite(&fileStat, 1, sizeof(fileStat), fpStat);
+
+				//double average = stat[i].average;
+				//double variance = stat[i].variance;
+				//double stddev = stat[i].stddev;
+				//double old = stat[i].old;
+				//fwrite(&average, 1, sizeof(average), fpStat);
+				//fwrite(",", 1, 1, fpStat);
+				//fwrite(&variance, 1, sizeof(variance), fpStat);
+				//fwrite(",", 1, 1, fpStat);
+				//fwrite(&stddev, 1, sizeof(stddev), fpStat);
+				//fwrite(",", 1, 1, fpStat);
+				//fwrite(&old, 1, sizeof(old), fpStat);
+				//fwrite("\n", 1, 1, fpStat);
+			}
+				
+			
 
 			//fileBufNew = (BYTE)stat[i].average;
 			int c = fwrite(&fileBufNew, 1, 1, fpDif);
@@ -262,16 +337,16 @@ int main()
 	return 0;
 }
 
-int rollingStatistic(int val, statistic *stat) {
-	int oldavg = stat->average;
-	int newavg = (oldavg - oldavg / stat->N) + (val / stat->N);
+int rollingStatistic(double val, statistic *stat) {
+	double oldavg = stat->average;
+	double newavg = (oldavg - oldavg / stat->N) + (val / stat->N);
 	stat->average = newavg;
 	//( NEU - ATL ) * ( NEU - AVG + ALT - AltAVT
 	//int newvar = (abs(val - statistic[i].old))*(abs(val - newavg + statistic[i].old - oldavg)) / (statistic[i].N - 1);
 	// int newvar = (val - stat->old)*(val - newavg + stat->old - oldavg) / (stat->N - 1);
-	int newvar = stat->N * pow(newavg - oldavg, 2);
-	if ((stat->variance + newvar) < 0)
-		newvar = stat->variance;
+	double newvar = (stat->N) * pow(newavg - oldavg, 2);
+	/*if ((stat->variance + newvar) < 0)
+		newvar = stat->variance;*/
 	stat->variance = newvar;
 	//print("V:" + str(self.variance))
 	/*printf("variance = %i\n", statistic.variance);*/
